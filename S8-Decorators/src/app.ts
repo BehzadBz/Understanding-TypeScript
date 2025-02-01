@@ -134,7 +134,7 @@ button.addEventListener("click", p.showMessage);
 //---
 
 interface ValidatorConfig {
-  [prperty: string]: {
+  [property: string]: {
     [validatableProp: string]: string[]; // ['required', 'positive']
   };
 }
