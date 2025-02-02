@@ -1,46 +1,36 @@
-// Helper function to get an element by ID and assert its type
-const getElement = <T extends HTMLElement>(
-  id: string,
-  elementType: new () => T,
-): T => {
-  const element = document.getElementById(id);
-  if (!element) {
-    throw new Error(`Element with id "${id}" not found.`);
-  }
-  if (!(element instanceof elementType)) {
-    throw new Error(
-      `Element with id "${id}" is not of type ${elementType.name}.`,
-    );
-  }
-  return element as T;
-};
+// Project State Management
+const createProjectState = () => {
+  let listeners: Function[] = [];
+  let projects: any[] = [];
 
-// Helper function to import template content
-const importTemplate = (templateId: string): DocumentFragment => {
-  const template = getElement(templateId, HTMLTemplateElement);
-  return document.importNode(template.content, true);
-};
+  const addListener = (listenerFn: Function) => {
+    listeners.push(listenerFn);
+  };
 
-// Helper function to attach an element to the DOM
-const attachElement = (
-  hostId: string,
-  element: HTMLElement,
-  position: InsertPosition = "afterbegin",
-) => {
-  const hostElement = getElement(hostId, HTMLDivElement);
-  hostElement.insertAdjacentElement(position, element);
-};
+  const addProject = (
+    title: string,
+    description: string,
+    numOfPeople: number,
+  ) => {
+    const newProject = {
+      id: Math.random().toString(),
+      title: title,
+      description: description,
+      people: numOfPeople,
+    };
+    projects.push(newProject);
+    for (const listenerFn of listeners) {
+      listenerFn(projects.slice());
+    }
+  };
 
-// Helper function to get input elements from the form
-const getInputElements = (formElement: HTMLFormElement) => {
   return {
-    titleInput: formElement.querySelector("#title") as HTMLInputElement,
-    descriptionInput: formElement.querySelector(
-      "#description",
-    ) as HTMLInputElement,
-    peopleInput: formElement.querySelector("#people") as HTMLInputElement,
+    addListener,
+    addProject,
   };
 };
+
+const projectState = createProjectState();
 
 // Validation logic
 type Validatable = {
@@ -84,6 +74,50 @@ const validate = (validatableInput: Validatable): boolean => {
     isValid = isValid && validatableInput.value <= validatableInput.max;
   }
   return isValid;
+};
+
+// Helper function to get an element by ID and assert its type
+const getElement = <T extends HTMLElement>(
+  id: string,
+  elementType: new () => T,
+): T => {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Element with id "${id}" not found.`);
+  }
+  if (!(element instanceof elementType)) {
+    throw new Error(
+      `Element with id "${id}" is not of type ${elementType.name}.`,
+    );
+  }
+  return element as T;
+};
+
+// Helper function to import template content
+const importTemplate = (templateId: string): DocumentFragment => {
+  const template = getElement(templateId, HTMLTemplateElement);
+  return document.importNode(template.content, true);
+};
+
+// Helper function to attach an element to the DOM
+const attachElement = (
+  hostId: string,
+  element: HTMLElement,
+  position: InsertPosition = "afterbegin",
+) => {
+  const hostElement = getElement(hostId, HTMLDivElement);
+  hostElement.insertAdjacentElement(position, element);
+};
+
+// Helper function to get input elements from the form
+const getInputElements = (formElement: HTMLFormElement) => {
+  return {
+    titleInput: formElement.querySelector("#title") as HTMLInputElement,
+    descriptionInput: formElement.querySelector(
+      "#description",
+    ) as HTMLInputElement,
+    peopleInput: formElement.querySelector("#people") as HTMLInputElement,
+  };
 };
 
 // Helper function to gather user input
@@ -148,7 +182,7 @@ const submitHandler = (
   const userInput = gatherUserInput(inputs);
   if (Array.isArray(userInput)) {
     const [title, description, people] = userInput;
-    console.log(title, description, people);
+    projectState.addProject(title, description, people);
     clearInputs(inputs);
   }
 };
@@ -183,12 +217,24 @@ const renderProjectList = (type: "active" | "finished") => {
   listElement.id = `${type}-projects`;
 
   // Render the content
-  listElement.querySelector("ul")!.id = `${type}-projects-list`;
+  const listId = `${type}-projects-list`;
+  listElement.querySelector("ul")!.id = listId;
   listElement.querySelector("h2")!.textContent =
     `${type.toUpperCase()} PROJECTS`;
 
   // Attach the list to the host element
   attachElement(hostId, listElement, "beforeend");
+
+  // Add a listener to update the project list when the state changes
+  projectState.addListener((projects: any[]) => {
+    const listEl = document.getElementById(listId)! as HTMLUListElement;
+    listEl.innerHTML = ""; // Clear the list before re-rendering
+    for (const prjItem of projects) {
+      const listItem = document.createElement("li");
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
+  });
 };
 
 // Initialize the project input
