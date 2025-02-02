@@ -173,5 +173,25 @@ const initializeProjectInput = () => {
   attachElement(hostId, formElement);
 };
 
+const renderProjectList = (type: "active" | "finished") => {
+  const templateId = "project-list";
+  const hostId = "app";
+
+  // Import the template and get the list element
+  const importedNode = importTemplate(templateId);
+  const listElement = importedNode.firstElementChild as HTMLElement;
+  listElement.id = `${type}-projects`;
+
+  // Render the content
+  listElement.querySelector("ul")!.id = `${type}-projects-list`;
+  listElement.querySelector("h2")!.textContent =
+    `${type.toUpperCase()} PROJECTS`;
+
+  // Attach the list to the host element
+  attachElement(hostId, listElement, "beforeend");
+};
+
 // Initialize the project input
 initializeProjectInput();
+renderProjectList("active");
+renderProjectList("finished");
