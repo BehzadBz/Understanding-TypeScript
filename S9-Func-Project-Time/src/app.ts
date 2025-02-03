@@ -219,6 +219,27 @@ const initializeProjectInput = () => {
   attachElement(hostId, formElement);
 };
 
+// Function to render a single project item
+const renderProjectItem = (hostId: string, project: Project) => {
+  const templateId = "single-project";
+  const hostElement = getElement(hostId, HTMLUListElement);
+
+  // Import the template and get the list item element
+  const importedNode = importTemplate(templateId);
+  const listItemElement = importedNode.firstElementChild as HTMLLIElement;
+  listItemElement.id = project.id;
+
+  // Render the content
+  const personsText =
+    project.people === 1 ? "1 person" : `${project.people} persons`;
+  listItemElement.querySelector("h2")!.textContent = project.title;
+  listItemElement.querySelector("h3")!.textContent = `${personsText} assigned`;
+  listItemElement.querySelector("p")!.textContent = project.description;
+
+  // Attach the list item to the host element
+  hostElement.appendChild(listItemElement);
+};
+
 const renderProjectList = (type: "active" | "finished") => {
   const templateId = "project-list";
   const hostId = "app";
@@ -242,21 +263,20 @@ const renderProjectList = (type: "active" | "finished") => {
     const filteredProjects = projects.filter((prj) => {
       if (type === "active") {
         return prj.status === ProjectStatus.Active;
+      } else {
+        return prj.status === ProjectStatus.Finished;
       }
-      return prj.status === ProjectStatus.Finished;
     });
 
     const listEl = document.getElementById(listId)! as HTMLUListElement;
     listEl.innerHTML = ""; // Clear the list before re-rendering
     for (const prjItem of filteredProjects) {
-      const listItem = document.createElement("li");
-      listItem.textContent = prjItem.title;
-      listEl.appendChild(listItem);
+      renderProjectItem(listId, prjItem);
     }
   });
 };
 
-// Initialize the project input
+// Initialize the project input and project lists
 initializeProjectInput();
 renderProjectList("active");
 renderProjectList("finished");
