@@ -1,4 +1,4 @@
-// Project type
+// Project Type
 enum ProjectStatus {
   Active,
   Finished,
@@ -13,41 +13,30 @@ type Project = {
 };
 
 // Project State Management
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
-const createProjectState = () => {
-  let listeners: Listener[] = [];
-  let projects: Project[] = [];
+const createState = <T>() => {
+  let listeners: Listener<T>[] = [];
+  let items: T[] = [];
 
-  const addListener = (listenerFn: Listener) => {
+  const addListener = (listenerFn: Listener<T>) => {
     listeners.push(listenerFn);
   };
 
-  const addProject = (
-    title: string,
-    description: string,
-    numOfPeople: number,
-  ) => {
-    const newProject: Project = {
-      id: Math.random().toString(),
-      title,
-      description,
-      people: numOfPeople,
-      status: ProjectStatus.Active,
-    };
-    projects.push(newProject);
+  const addItem = (item: T) => {
+    items.push(item);
     for (const listenerFn of listeners) {
-      listenerFn(projects.slice());
+      listenerFn(items.slice());
     }
   };
 
   return {
     addListener,
-    addProject,
+    addItem,
   };
 };
 
-const projectState = createProjectState();
+const projectState = createState<Project>();
 
 // Validation logic
 type Validatable = {
@@ -199,7 +188,13 @@ const submitHandler = (
   const userInput = gatherUserInput(inputs);
   if (Array.isArray(userInput)) {
     const [title, description, people] = userInput;
-    projectState.addProject(title, description, people);
+    projectState.addItem({
+      id: Math.random().toString(),
+      title,
+      description,
+      people,
+      status: ProjectStatus.Active,
+    });
     clearInputs(inputs);
   }
 };
