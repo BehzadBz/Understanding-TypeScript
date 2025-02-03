@@ -1,3 +1,15 @@
+// Drag & Drop Types
+type Draggable = {
+  dragStartHandler: (event: DragEvent) => void;
+  dragEndHandler: (event: DragEvent) => void;
+};
+
+type DragTarget = {
+  dragOverHandler: (event: DragEvent) => void;
+  dropHandler: (event: DragEvent) => void;
+  dragLeaveHandler: (event: DragEvent) => void;
+};
+
 // Project Type
 enum ProjectStatus {
   Active,
@@ -15,7 +27,7 @@ type Project = {
 // Project State Management
 type Listener<T> = (items: T[]) => void;
 
-const createState = <T>() => {
+const createState = <T extends Project>() => {
   let listeners: Listener<T>[] = [];
   let items: T[] = [];
 
@@ -25,6 +37,18 @@ const createState = <T>() => {
 
   const addItem = (item: T) => {
     items.push(item);
+    updateListeners();
+  };
+
+  const moveItem = (itemId: string, newStatus: ProjectStatus) => {
+    const item = items.find((itm) => (itm as Project).id === itemId);
+    if (item && (item as Project).status !== newStatus) {
+      (item as Project).status = newStatus;
+      updateListeners();
+    }
+  };
+
+  const updateListeners = () => {
     for (const listenerFn of listeners) {
       listenerFn(items.slice());
     }
@@ -33,6 +57,7 @@ const createState = <T>() => {
   return {
     addListener,
     addItem,
+    moveItem,
   };
 };
 
@@ -236,6 +261,16 @@ const renderProjectItem = (hostId: string, project: Project) => {
   listItemElement.querySelector("h3")!.textContent = `${personsText} assigned`;
   listItemElement.querySelector("p")!.textContent = project.description;
 
+  // Add drag event listeners
+  listItemElement.addEventListener("dragstart", (event) => {
+    event.dataTransfer!.setData("text/plain", project.id);
+    event.dataTransfer!.effectAllowed = "move";
+  });
+
+  listItemElement.addEventListener("dragend", (_) => {
+    console.log("DragEnd");
+  });
+
   // Attach the list item to the host element
   hostElement.appendChild(listItemElement);
 };
@@ -257,6 +292,28 @@ const renderProjectList = (type: "active" | "finished") => {
 
   // Attach the list to the host element
   attachElement(hostId, listElement, "beforeend");
+
+  // Add drag & drop event listeners
+  const listEl = listElement.querySelector("ul")!;
+  listEl.addEventListener("dragover", (event) => {
+    if (event.dataTransfer && event.dataTransfer.types[0] === "text/plain") {
+      event.preventDefault();
+      listEl.classList.add("droppable");
+    }
+  });
+
+  listEl.addEventListener("dragleave", (_) => {
+    listEl.classList.remove("droppable");
+  });
+
+  listEl.addEventListener("drop", (event) => {
+    const prjId = event.dataTransfer!.getData("text/plain");
+    projectState.moveItem(
+      prjId,
+      type === "active" ? ProjectStatus.Active : ProjectStatus.Finished,
+    );
+    listEl.classList.remove("droppable");
+  });
 
   // Add a listener to update the project list when the state changes
   projectState.addListener((projects: Project[]) => {
