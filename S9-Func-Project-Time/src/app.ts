@@ -1,9 +1,25 @@
-// Project State Management
-const createProjectState = () => {
-  let listeners: Function[] = [];
-  let projects: any[] = [];
+// Project type
+enum ProjectStatus {
+  Active,
+  Finished,
+}
 
-  const addListener = (listenerFn: Function) => {
+type Project = {
+  id: string;
+  title: string;
+  description: string;
+  people: number;
+  status: ProjectStatus;
+};
+
+// Project State Management
+type Listener = (items: Project[]) => void;
+
+const createProjectState = () => {
+  let listeners: Listener[] = [];
+  let projects: Project[] = [];
+
+  const addListener = (listenerFn: Listener) => {
     listeners.push(listenerFn);
   };
 
@@ -12,11 +28,12 @@ const createProjectState = () => {
     description: string,
     numOfPeople: number,
   ) => {
-    const newProject = {
+    const newProject: Project = {
       id: Math.random().toString(),
-      title: title,
-      description: description,
+      title,
+      description,
       people: numOfPeople,
+      status: ProjectStatus.Active,
     };
     projects.push(newProject);
     for (const listenerFn of listeners) {
@@ -226,10 +243,17 @@ const renderProjectList = (type: "active" | "finished") => {
   attachElement(hostId, listElement, "beforeend");
 
   // Add a listener to update the project list when the state changes
-  projectState.addListener((projects: any[]) => {
+  projectState.addListener((projects: Project[]) => {
+    const filteredProjects = projects.filter((prj) => {
+      if (type === "active") {
+        return prj.status === ProjectStatus.Active;
+      }
+      return prj.status === ProjectStatus.Finished;
+    });
+
     const listEl = document.getElementById(listId)! as HTMLUListElement;
     listEl.innerHTML = ""; // Clear the list before re-rendering
-    for (const prjItem of projects) {
+    for (const prjItem of filteredProjects) {
       const listItem = document.createElement("li");
       listItem.textContent = prjItem.title;
       listEl.appendChild(listItem);
